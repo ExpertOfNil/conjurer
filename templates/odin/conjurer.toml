@@ -1,0 +1,8 @@
+[[task]]
+name = "test"
+alias = "t"
+dir = ""
+commands = [
+    "echo Parent Dir:",
+    "cd .. && pwd",
+]

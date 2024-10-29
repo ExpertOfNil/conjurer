@@ -1,0 +1,48 @@
+[[task]]
+name = "clean"
+alias = "c"
+dir = "CONJURER_PROJECT_DIR"
+commands = [
+    "rm -rf build && mkdir build",
+    "rm -rf bin",
+]
+
+[[task]]
+name = "build-debug"
+alias = "bd"
+dir = "CONJURER_PROJECT_DIR"
+pre_tasks = ["clean"]
+commands = [
+    "cd build && cmake ..",
+    "cmake --build build",
+    "echo BUILD TYPE: Debug",
+]
+
+[[task]]
+name = "run-debug"
+alias = "rd"
+dir = "CONJURER_PROJECT_DIR"
+pre_tasks = ["build-debug"]
+commands = [
+    "./bin/CONJURER_PROJECT_NAME",
+]
+
+[[task]]
+name = "build-release"
+alias = "br"
+dir = "CONJURER_PROJECT_DIR"
+pre_tasks = ["clean"]
+commands = [
+    "cd build && cmake .. -DCMAKE_BUILD_TYPE=Release",
+    "cmake --build build",
+    "echo BUILD TYPE: Release",
+]
+
+[[task]]
+name = "run-release"
+alias = "rr"
+dir = "CONJURER_PROJECT_DIR"
+pre_tasks = ["build-release"]
+commands = [
+    "./bin/CONJURER_PROJECT_NAME",
+]
