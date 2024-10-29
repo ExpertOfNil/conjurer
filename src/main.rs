@@ -1,9 +1,12 @@
-use clap::{Parser, Subcommand};
+mod templates;
+
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use log::LevelFilter;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use templates::*;
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -23,61 +26,80 @@ struct Task {
 }
 
 #[derive(Parser, Debug)]
-struct Args {
-    /// Name of task to run, or `new-toml` to create a new conjure.toml.
-    name: String,
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
 }
 
-static NEW_TASK: &str = r#"
-[[task]]
-# Name of the task
-name = "test"
-# Another name for the task
-alias = "t"
-# Defaults to the current directory
-dir = ""
-# Commands to run
-commands = [
-    "echo 'parent path:'",
-    "cd .. && pwd",
-]"#;
+#[derive(Subcommand, Debug)]
+enum Commands {
+    New {
+        #[command(subcommand)]
+        new_type: NewCommandType,
+    },
+    Task {
+        /// Name of task to run, or `new-toml` to create a new conjure.toml.
+        name: String,
+    },
+}
+
+#[derive(Clone, Debug, Subcommand)]
+enum NewCommandType {
+    /// Create a new C++ project from template.
+    Cpp {
+        /// Project name
+        name: String,
+    },
+    /// Create a new Odin project from template.
+    Odin {
+        /// Project name
+        name: String,
+    },
+    /// Create a new `conjure.toml` from template.
+    Toml,
+}
 
 fn main() -> anyhow::Result<()> {
     env_logger::init();
-    let pwd = std::env::current_dir()?.join("conjurer.toml");
-    if !pwd.exists() {
-        return Err(anyhow::anyhow!(
-            "There is not a conjurer.toml in your current path"
-        ));
-    }
 
-    let tasks: Vec<Task> = toml::from_str::<Config>(&std::fs::read_to_string(pwd)?)?.task;
-    let task_map = process_input(tasks)?;
-    log::debug!("TASKS: {:?}", task_map);
+    let args = Cli::parse();
+    match args.command {
+        Commands::New { new_type } => match new_type {
+            NewCommandType::Toml => {
+                create_new_toml()?;
+            }
+            NewCommandType::Cpp { name, .. } => {
+                create_cpp_project(&name)?;
+            }
+            NewCommandType::Odin { name, .. } => {
+                println!("Make a Odin project: {:?}", name);
+                unimplemented!();
+            }
+        },
+        Commands::Task { name } => {
+            let pwd = std::env::current_dir()?.join("conjurer.toml");
+            if !pwd.exists() {
+                return Err(anyhow::anyhow!(
+                    "There is not a conjurer.toml in your current path"
+                ));
+            }
 
-    let args = Args::parse();
-    if args.name == "new-toml" {
-        let current_dir = std::env::current_dir()?;
-        let toml_file = std::path::Path::new(&current_dir).join("conjurer.toml");
-        if toml_file.exists() {
-            log::warn!("Backing up existing `conjurer.toml` file to `conjurer.bak.toml`");
-            let new_toml_file = std::path::Path::new(&current_dir).join("conjurer.bak.toml");
-            std::fs::rename(&toml_file, new_toml_file)?;
-        }
-        return std::fs::write(toml_file, NEW_TASK).map_err(|e| e.into());
-    }
-    if let Some(task) = task_map.get(&args.name) {
-        if let Some(pre_tasks) = &task.pre_tasks {
-            for task_key in pre_tasks {
-                let pre_task = task_map
-                    .get(task_key)
-                    .ok_or(anyhow::anyhow!("Pre-task {} not found.", task_key))?;
-                run_commands(pre_task)?;
+            let tasks: Vec<Task> = toml::from_str::<Config>(&std::fs::read_to_string(pwd)?)?.task;
+            let task_map = process_input(tasks)?;
+            log::debug!("TASKS: {:?}", task_map);
+            if let Some(task) = task_map.get(&name) {
+                if let Some(pre_tasks) = &task.pre_tasks {
+                    for task_key in pre_tasks {
+                        let pre_task = task_map
+                            .get(task_key)
+                            .ok_or(anyhow::anyhow!("Pre-task {} not found.", task_key))?;
+                        run_commands(pre_task)?;
+                    }
+                }
+                run_commands(task)?;
             }
         }
-        run_commands(task)?;
-    }
-
+    };
     Ok(())
 }
 
