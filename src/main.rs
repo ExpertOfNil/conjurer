@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use log::LevelFilter;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 #[derive(Debug, Deserialize)]
@@ -17,6 +18,8 @@ struct Task {
     commands: Vec<String>,
     #[serde(default)]
     dir: Option<std::path::PathBuf>,
+    #[serde(default)]
+    pre_tasks: Option<Vec<String>>,
 }
 
 #[derive(Parser, Debug)]
@@ -40,9 +43,7 @@ commands = [
 ]"#;
 
 fn main() -> anyhow::Result<()> {
-    env_logger::Builder::new()
-        .filter(None, LevelFilter::Warn)
-        .init();
+    env_logger::init();
     let pwd = std::env::current_dir()?.join("conjurer.toml");
     if !pwd.exists() {
         return Err(anyhow::anyhow!(
@@ -66,33 +67,47 @@ fn main() -> anyhow::Result<()> {
         return std::fs::write(toml_file, NEW_TASK).map_err(|e| e.into());
     }
     if let Some(task) = task_map.get(&args.name) {
-        for cmd in task.commands.iter() {
-            let output = match &task.dir {
-                Some(task_dir) => Command::new("sh")
-                    .arg("-c")
-                    .arg(cmd)
-                    .current_dir(task_dir)
-                    .stdout(Stdio::inherit())
-                    .output()
-                    .expect("failed to run command"),
-                None => Command::new("sh")
-                    .arg("-c")
-                    .arg(cmd)
-                    .stdout(Stdio::inherit())
-                    .output()
-                    .expect("failed to run command"),
-            };
-            match output.status.code() {
-                Some(0) => log::info!("EXIT SUCCESS: {}", cmd),
-                Some(code) => {
-                    log::error!("EXIT FAIL [{}]: {}", code, cmd);
-                    return Err(anyhow::anyhow!("Command failed: {}", cmd));
-                }
-                None => log::warn!("EXIT UNKNOWN: {}", cmd),
+        if let Some(pre_tasks) = &task.pre_tasks {
+            for task_key in pre_tasks {
+                let pre_task = task_map
+                    .get(task_key)
+                    .ok_or(anyhow::anyhow!("Pre-task {} not found.", task_key))?;
+                run_commands(pre_task)?;
             }
         }
+        run_commands(task)?;
     }
 
+    Ok(())
+}
+
+fn run_commands(task: &Task) -> anyhow::Result<()> {
+    for cmd in task.commands.iter() {
+        log::debug!("Running command: {}", cmd);
+        let output = match &task.dir {
+            Some(task_dir) => Command::new("sh")
+                .arg("-c")
+                .arg(cmd)
+                .current_dir(task_dir)
+                .stdout(Stdio::inherit())
+                .output()
+                .expect("failed to run command"),
+            None => Command::new("sh")
+                .arg("-c")
+                .arg(cmd)
+                .stdout(Stdio::inherit())
+                .output()
+                .expect("failed to run command"),
+        };
+        match output.status.code() {
+            Some(0) => log::info!("EXIT SUCCESS: {}", cmd),
+            Some(code) => {
+                log::error!("EXIT FAIL [{}]: {}", code, cmd);
+                return Err(anyhow::anyhow!("Command failed: {}", cmd));
+            }
+            None => log::warn!("EXIT UNKNOWN: {}", cmd),
+        }
+    }
     Ok(())
 }
 
