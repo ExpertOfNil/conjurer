@@ -1,0 +1,17 @@
+[package]
+name = "conjurer"
+version = "0.1.0"
+edition = "2021"
+default-run = "conjure"
+
+[[bin]]
+name = "conjure"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.91"
+clap = { version = "4.5.20", features = ["derive"] }
+env_logger = "0.11.5"
+log = "0.4.22"
+serde = { version = "1.0.214", features = ["derive"] }
+toml = "0.8.19"
