@@ -5,7 +5,7 @@ edition = "2021"
 default-run = "conjure"
 
 [[bin]]
-name = "conjure"
+name = "summon"
 path = "src/main.rs"
 
 [dependencies]
