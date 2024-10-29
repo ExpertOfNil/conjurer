@@ -72,8 +72,7 @@ fn main() -> anyhow::Result<()> {
                 create_cpp_project(&name)?;
             }
             NewCommandType::Odin { name, .. } => {
-                println!("Make a Odin project: {:?}", name);
-                unimplemented!();
+                create_odin_project(&name)?;
             }
         },
         Commands::Task { name } => {
