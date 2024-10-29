@@ -8,10 +8,10 @@ command, run `summon new -h` or `summon task -h`.
 ## Tasks
 
 Tasks are defined in a `conjurer.toml` file.  When `summon task <task_name>`
-looks for the `conjurer.toml` in the current directory.  If present, it will
-match `<task_name>` with a task `name` or `alias` and run the listed ocmmands.
-Here is an example that will echo "Parent Dir:", navigate to the parent
-directory, and will run the `pwd` command.
+runs, it looks for the `conjurer.toml` in the current directory.  If present, it
+will match `<task_name>` with a task `name` or `alias` and run the listed
+commands. Here is an example that will echo "Parent Dir:", navigate to the
+parent directory, and will run the `pwd` command.
 
 ```toml
 [[task]]
@@ -84,4 +84,5 @@ since the Odin compiler already has built-in build and run executables.
 
 - [ ] Python project template
 - [ ] Ability to "plug-in" new templates
+- [ ] Windows compatability
 
