@@ -134,12 +134,14 @@ fn run_commands(task: &Task) -> anyhow::Result<()> {
                 .arg(cmd)
                 .current_dir(task_dir)
                 .stdout(Stdio::inherit())
+                .stderr(Stdio::inherit())
                 .output()
                 .expect("failed to run command"),
             None => Command::new("sh")
                 .arg("-c")
                 .arg(cmd)
                 .stdout(Stdio::inherit())
+                .stderr(Stdio::inherit())
                 .output()
                 .expect("failed to run command"),
         };
