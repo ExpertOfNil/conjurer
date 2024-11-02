@@ -25,7 +25,9 @@ struct Task {
     pre_tasks: Option<Vec<String>>,
 }
 
+/// A tool for automating command line tasks
 #[derive(Parser, Debug)]
+#[command(version, about, long_about=None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
