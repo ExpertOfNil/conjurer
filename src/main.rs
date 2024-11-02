@@ -37,6 +37,10 @@ enum Commands {
         #[command(subcommand)]
         new_type: NewCommandType,
     },
+    Existing {
+        #[command(subcommand)]
+        existing_type: ExistingCommandType,
+    },
     Task {
         /// Name of task to run, or `new-toml` to create a new conjure.toml.
         name: String,
@@ -59,6 +63,17 @@ enum NewCommandType {
     Toml,
 }
 
+#[derive(Clone, Debug, Subcommand)]
+enum ExistingCommandType {
+    /// Create a C++ `conjure.toml` from template at the current location.
+    Cpp {
+        /// Project name
+        name: String,
+    },
+    /// Create a Odin `conjure.toml` from template at the current location.
+    Odin,
+}
+
 fn main() -> anyhow::Result<()> {
     env_logger::init();
 
@@ -73,6 +88,14 @@ fn main() -> anyhow::Result<()> {
             }
             NewCommandType::Odin { name, .. } => {
                 create_odin_project(&name)?;
+            }
+        },
+        Commands::Existing { existing_type } => match existing_type {
+            ExistingCommandType::Cpp { name, .. } => {
+                create_cpp_toml(&name)?;
+            }
+            ExistingCommandType::Odin => {
+                create_odin_toml()?;
             }
         },
         Commands::Task { name } => {

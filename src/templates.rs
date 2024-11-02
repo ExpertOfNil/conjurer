@@ -14,6 +14,23 @@ pub(crate) fn create_new_toml() -> anyhow::Result<()> {
     std::fs::write(toml_file, CONJURER_TOML).map_err(|e| e.into())
 }
 
+pub (crate) fn create_cpp_toml(name: &str) -> anyhow::Result<()> {
+    let cwd = std::env::current_dir()?;
+    let conjure = Path::new(&cwd).join("conjurer.toml");
+    let project_root_str = cwd.to_str().expect("Could not create string from `cwd`");
+    let conjure_content = String::from(CONJURER_CPP)
+        .replace("CONJURER_PROJECT_DIR", project_root_str)
+        .replace("CONJURER_PROJECT_NAME", name);
+    fs::write(conjure, conjure_content)?;
+    Ok(())
+}
+
+pub (crate) fn create_odin_toml() -> anyhow::Result<()> {
+    let cwd = std::env::current_dir()?;
+    let conjure = Path::new(&cwd).join("conjurer.toml");
+    fs::write(conjure, CONJURER_ODIN)?;
+    Ok(())
+}
 
 static MAIN_CPP: &str = include_str!("../templates/cpp/main.cpp");
 static CMAKELISTS: &str = include_str!("../templates/cpp/CMakeLists.txt");
